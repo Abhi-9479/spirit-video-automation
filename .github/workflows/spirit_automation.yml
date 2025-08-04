@@ -3,7 +3,7 @@ name: Spirit Facts Video Automation
 on:
   schedule:
     # Run every day at 9:00 PM IST (3:30 PM UTC)
-    - cron: '30 15 * * *'
+    - cron: '30 6 * * *'
   
   # Allow manual triggering from GitHub UI
   workflow_dispatch:
