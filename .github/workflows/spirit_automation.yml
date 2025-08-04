@@ -1,0 +1,87 @@
+name: Spirit Facts Video Automation
+
+on:
+  schedule:
+    # Run every day at 9:00 PM IST (3:30 PM UTC)
+    - cron: '30 15 * * *'
+  
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  generate-spirit-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        lfs: true  # Important: This downloads Git LFS files
+    
+    - name: 🐍 Set up Python 3.12.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12.10'
+    
+    - name: 🔍 Verify Python version
+      run: |
+        python --version
+        python -c "import sys; print(f'Python version: {sys.version}')"
+        pip --version
+    
+    - name: 📦 Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y imagemagick ffmpeg libjpeg-dev zlib1g-dev
+        # Configure ImageMagick policy for video processing
+        sudo sed -i 's/rights="none"/rights="read,write"/g' /etc/ImageMagick-6/policy.xml
+    
+    - name: 🔧 Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt
+        # Verify installations
+        pip list
+    
+    - name: 🔐 Create credentials files from secrets
+      run: |
+        echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+        echo '${{ secrets.CLIENT_SECRETS }}' > client_secrets.json
+        echo '${{ secrets.TOKEN_PICKLE_BASE64 }}' | base64 -d > token.pickle
+    
+    - name: 🌍 Create environment file
+      run: |
+        echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
+    
+    - name: 📁 Verify media files
+      run: |
+        echo "📊 Media files verification:"
+        echo "Spirit music files:"
+        ls -la spirit_music/ | head -10
+        echo "Spirit template videos:"  
+        ls -la spirit_temp/ | head -10
+        echo "Total music files: $(find spirit_music -name '*.mp3' | wc -l)"
+        echo "Total video files: $(find spirit_temp -name '*.mp4' | wc -l)"
+    
+    - name: 🚀 Generate and upload spirit video
+      run: |
+        python --version
+        python spirit_git.py
+      env:
+        GITHUB_ACTIONS: true
+        PYTHONPATH: ${{ github.workspace }}
+    
+    - name: 💾 Save generated video as artifact (optional backup)
+      if: always()  # Run even if upload fails
+      uses: actions/upload-artifact@v4
+      with:
+        name: spirit-video-${{ github.run_number }}
+        path: "quote_*.mp4"
+        retention-days: 7
+    
+    - name: 📧 Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Spirit video automation failed!"
+        echo "Check the logs above for details."
