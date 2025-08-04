@@ -255,20 +255,21 @@ def generate_video_with_music(part1: str, part2: str, output_filename: str):
     vertical_pixel_position = int(1920 * vertical_position_percent)
     final_position = ('center', vertical_pixel_position)
     
+    font_path = 'fonts/ARLRDBD.ttf'
     heading_bg = ColorClip(size=(box_width, box_height), color=(255, 255, 255)).set_position(final_position).set_duration(VIDEO_DURATION)
-    heading_clip = TextClip(heading_text, fontsize=75, color='black', font='Arial-Bold', size=heading_bg.size).set_position(final_position).set_duration(VIDEO_DURATION)
+    heading_clip = TextClip(heading_text, fontsize=75, color='black', font=font_path, size=heading_bg.size).set_position(final_position).set_duration(VIDEO_DURATION)
 
     # --- 4. Create Animated and Fading Quote Clips ---
     part1_duration = 6
     part2_start_time = 6
     part2_duration = 6
     
-    quote_clip1 = TextClip(part1, fontsize=80, color='white', font='Arial-Bold', stroke_color='black', stroke_width=3,
+    quote_clip1 = TextClip(part1, fontsize=80, color='white', font=font_path, stroke_color='black', stroke_width=3,
                            size=(1080 * 0.9, None), method='caption')
     quote_clip1 = quote_clip1.set_position('center').set_duration(part1_duration)
     quote_clip1 = quote_clip1.fx(vfx.fadein, 1).fx(vfx.fadeout, 0.5)
 
-    quote_clip2 = TextClip(part2, fontsize=80, color='white', font='Arial-Bold', stroke_color='black', stroke_width=3,
+    quote_clip2 = TextClip(part2, fontsize=80, color='white', font=font_path, stroke_color='black', stroke_width=3,
                            size=(1080 * 0.9, None), method='caption')
     quote_clip2 = quote_clip2.set_position('center').set_start(part2_start_time).set_duration(part2_duration)
     quote_clip2 = quote_clip2.fx(vfx.fadein, 0.5)
