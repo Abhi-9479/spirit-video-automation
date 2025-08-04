@@ -184,10 +184,6 @@ Your comma-separated list of tags:
 
 def generate_video_with_music(part1: str, part2: str, output_filename: str):
     """Generates a video with a sequentially chosen background, music, subtitles, and a heading."""
-    try:
-        change_settings({"IMAGEMAGICK_BINARY": r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"})
-    except Exception:
-        print("⚠️ ImageMagick path not configured. Text may fail.")
 
     print(f"🎬 Generating video with music for '{output_filename}'...")
     VIDEO_DURATION = 12
