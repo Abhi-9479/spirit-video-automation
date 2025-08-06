@@ -17,11 +17,11 @@ jobs:
       contents: write
       
     steps:
-    # Step 1: Checkout the repository code (without LFS)
+    # Step 1: Checkout the repository code
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
     
-    # Step 2: Download all media files from the GitHub Release
+    # Step 2: Download all media files from the GitHub Release with authentication
     - name: 📥 Download Media Assets from Release
       run: |
         echo "Creating media directories..."
@@ -29,47 +29,40 @@ jobs:
         mkdir -p spirit_music
 
         echo "Downloading video templates..."
-        curl -L -o "spirit_temp/Buddha_glass.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4"
-        curl -L -o "spirit_temp/Buddha_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4"
-        curl -L -o "spirit_temp/Buddha_statue_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4"
-        curl -L -o "spirit_temp/candles_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4"
-        curl -L -o "spirit_temp/trees_spiritual.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_glass.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_statue_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/candles_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/trees_spiritual.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4"
 
         echo "Downloading music files..."
-        curl -L -o "spirit_music/Eternal Garden_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3"
-        curl -L -o "spirit_music/Exploring_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3"
-        curl -L -o "spirit_music/Helium_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3"
-        curl -L -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
-        curl -L -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Eternal Garden_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Exploring_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Helium_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
+        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
 
-    # Step 3: Debug the downloaded files to see what they are
-    - name: 🐞 Debug Downloaded Files
-      run: |
-        echo "--- Checking downloaded file type ---"
-        file spirit_music/Helium_spirit.mp3
-        echo "--- Displaying first 10 lines of the downloaded file ---"
-        head -n 10 spirit_music/Helium_spirit.mp3
-
+    # Step 3: Remove the debugging step as it's no longer needed
+    
     # Step 4: Set up Python
     - name: 🐍 Set up Python 3.12.10
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.10'
     
-    # Step 5: Install system dependencies
+    # ... (The rest of your workflow file continues as normal) ...
+    # ... I have removed the debug step and the rest is the same ...
     - name: 📦 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y imagemagick ffmpeg libjpeg-dev zlib1g-dev
         sudo sed -i 's/rights="none"/rights="read,write"/g' /etc/ImageMagick-6/policy.xml
     
-    # Step 6: Install Python dependencies
     - name: 🔧 Install Python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
     
-    # Step 7: Create credential and environment files
     - name: 🔐 Create credentials files from secrets
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
@@ -79,7 +72,6 @@ jobs:
       run: |
         echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
     
-    # Step 8: Run your main Python script
     - name: 🚀 Generate and upload spirit video
       run: |
         python spirit_git.py
@@ -87,7 +79,6 @@ jobs:
         GITHUB_ACTIONS: true
         PYTHONPATH: ${{ github.workspace }}
 
-    # Step 9: Commit the updated index file back to the repository
     - name: 💾 Commit and push last video index
       run: |
         git config --global user.name 'github-actions[bot]'
@@ -96,7 +87,6 @@ jobs:
         git diff-index --quiet HEAD || git commit -m "Update last used video index"
         git push
         
-    # Step 10: Save the final video as a temporary artifact
     - name: 💾 Save generated video as artifact (optional backup)
       if: always()
       uses: actions/upload-artifact@v4
@@ -105,7 +95,6 @@ jobs:
         path: "quote_*.mp4"
         retention-days: 7
     
-    # Step 11: Notify on failure
     - name: 📧 Notify on failure
       if: failure()
       run: |
