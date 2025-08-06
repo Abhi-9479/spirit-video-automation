@@ -21,34 +21,71 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
     
-    # Step 2: Download all media files from the GitHub Release
+    # Step 2: Download all media files from the GitHub Release with proper error handling
     - name: 📥 Download Media Assets from Release
       run: |
         echo "Creating media directories..."
         mkdir -p spirit_temp
         mkdir -p spirit_music
 
+        # Function to download with error checking
+        download_file() {
+          local url="$1"
+          local output="$2"
+          echo "Downloading: $output"
+          
+          if curl -L --fail -o "$output" "$url"; then
+            # Verify the file was downloaded and has reasonable size
+            if [ -s "$output" ]; then
+              file_size=$(stat -c%s "$output")
+              if [ "$file_size" -gt 1000 ]; then
+                echo "✅ Successfully downloaded $output ($file_size bytes)"
+              else
+                echo "❌ Downloaded file $output is too small ($file_size bytes), likely an error page"
+                exit 1
+              fi
+            else
+              echo "❌ Downloaded file $output is empty"
+              exit 1
+            fi
+          else
+            echo "❌ Failed to download $output"
+            exit 1
+          fi
+        }
+
         echo "Downloading video templates..."
-        curl -L -o "spirit_temp/Buddha_glass.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4"
-        curl -L -o "spirit_temp/Buddha_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4"
-        curl -L -o "spirit_temp/Buddha_statue_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4"
-        curl -L -o "spirit_temp/candles_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4"
-        curl -L -o "spirit_temp/trees_spiritual.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4" "spirit_temp/Buddha_glass.mp4"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4" "spirit_temp/Buddha_spirit.mp4"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4" "spirit_temp/Buddha_statue_spirit.mp4"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4" "spirit_temp/candles_spirit.mp4"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4" "spirit_temp/trees_spiritual.mp4"
 
         echo "Downloading music files..."
-        curl -L -o "spirit_music/Eternal Garden_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3"
-        curl -L -o "spirit_music/Exploring_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3"
-        curl -L -o "spirit_music/Helium_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3"
-        curl -L -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
-        curl -L -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal.Garden_spirit.mp3" "spirit_music/Eternal Garden_spirit.mp3"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3" "spirit_music/Exploring_spirit.mp3"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3" "spirit_music/Helium_spirit.mp3"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3" "spirit_music/Moonlight_spirit.mp3"
+        download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina.-.Schwartzy.mp3" "spirit_music/Tiburtina - Schwartzy.mp3"
 
-    # Step 3: Debug the downloaded files to see what they are
-    - name: 🐞 Debug Downloaded Files
+    # Step 3: Verify downloaded files
+    - name: ✅ Verify Downloaded Files
       run: |
-        echo "--- Checking downloaded file type ---"
-        file spirit_music/Helium_spirit.mp3
-        echo "--- Displaying first 10 lines of the downloaded file ---"
-        head -n 10 spirit_music/Helium_spirit.mp3
+        echo "--- Verifying video files ---"
+        for file in spirit_temp/*.mp4; do
+          if [ -f "$file" ]; then
+            echo "$(basename "$file"): $(stat -c%s "$file") bytes"
+            file "$file"
+          fi
+        done
+        
+        echo "--- Verifying music files ---"
+        for file in spirit_music/*.mp3; do
+          if [ -f "$file" ]; then
+            echo "$(basename "$file"): $(stat -c%s "$file") bytes"
+            file "$file"
+          fi
+        done
 
     # Step 4: Set up Python
     - name: 🐍 Set up Python 3.12.10
