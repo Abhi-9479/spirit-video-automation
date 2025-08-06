@@ -21,7 +21,20 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
     
-    # Step 2: Download all media files from the GitHub Release with proper error handling
+    # Step 2: First, let's debug what files are actually available in the release
+    - name: 🔍 Debug Release Assets
+      run: |
+        echo "Checking what's available in the release..."
+        curl -s "https://api.github.com/repos/Abhi-9479/spirit-video-automation/releases/tags/v1.0-assets" | grep -o '"name": "[^"]*"' || echo "Failed to fetch release info"
+        
+        echo "Testing individual file URLs..."
+        echo "Testing Buddha_glass.mp4..."
+        curl -I "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4" || echo "Buddha_glass.mp4 not found"
+        
+        echo "Testing Eternal.Garden_spirit.mp3..."
+        curl -I "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal.Garden_spirit.mp3" || echo "Eternal.Garden_spirit.mp3 not found"
+
+    # Step 3: Download all media files from the GitHub Release with proper error handling
     - name: 📥 Download Media Assets from Release
       run: |
         echo "Creating media directories..."
@@ -33,6 +46,7 @@ jobs:
           local url="$1"
           local output="$2"
           echo "Downloading: $output"
+          echo "From URL: $url"
           
           if curl -L --fail -o "$output" "$url"; then
             # Verify the file was downloaded and has reasonable size
@@ -42,6 +56,7 @@ jobs:
                 echo "✅ Successfully downloaded $output ($file_size bytes)"
               else
                 echo "❌ Downloaded file $output is too small ($file_size bytes), likely an error page"
+                cat "$output"
                 exit 1
               fi
             else
@@ -50,6 +65,11 @@ jobs:
             fi
           else
             echo "❌ Failed to download $output"
+            echo "Trying without --fail flag to see what we get..."
+            curl -L -o "$output.debug" "$url"
+            echo "Response content:"
+            cat "$output.debug"
+            rm -f "$output.debug"
             exit 1
           fi
         }
@@ -68,7 +88,7 @@ jobs:
         download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3" "spirit_music/Moonlight_spirit.mp3"
         download_file "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina.-.Schwartzy.mp3" "spirit_music/Tiburtina - Schwartzy.mp3"
 
-    # Step 3: Verify downloaded files
+    # Step 4: Verify downloaded files
     - name: ✅ Verify Downloaded Files
       run: |
         echo "--- Verifying video files ---"
@@ -87,26 +107,26 @@ jobs:
           fi
         done
 
-    # Step 4: Set up Python
+    # Step 5: Set up Python
     - name: 🐍 Set up Python 3.12.10
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.10'
     
-    # Step 5: Install system dependencies
+    # Step 6: Install system dependencies
     - name: 📦 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y imagemagick ffmpeg libjpeg-dev zlib1g-dev
         sudo sed -i 's/rights="none"/rights="read,write"/g' /etc/ImageMagick-6/policy.xml
     
-    # Step 6: Install Python dependencies
+    # Step 7: Install Python dependencies
     - name: 🔧 Install Python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
     
-    # Step 7: Create credential and environment files
+    # Step 8: Create credential and environment files
     - name: 🔐 Create credentials files from secrets
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
@@ -116,7 +136,7 @@ jobs:
       run: |
         echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
     
-    # Step 8: Run your main Python script
+    # Step 9: Run your main Python script
     - name: 🚀 Generate and upload spirit video
       run: |
         python spirit_git.py
@@ -124,7 +144,7 @@ jobs:
         GITHUB_ACTIONS: true
         PYTHONPATH: ${{ github.workspace }}
 
-    # Step 9: Commit the updated index file back to the repository
+    # Step 10: Commit the updated index file back to the repository
     - name: 💾 Commit and push last video index
       run: |
         git config --global user.name 'github-actions[bot]'
@@ -133,7 +153,7 @@ jobs:
         git diff-index --quiet HEAD || git commit -m "Update last used video index"
         git push
         
-    # Step 10: Save the final video as a temporary artifact
+    # Step 11: Save the final video as a temporary artifact
     - name: 💾 Save generated video as artifact (optional backup)
       if: always()
       uses: actions/upload-artifact@v4
@@ -142,7 +162,7 @@ jobs:
         path: "quote_*.mp4"
         retention-days: 7
     
-    # Step 11: Notify on failure
+    # Step 12: Notify on failure
     - name: 📧 Notify on failure
       if: failure()
       run: |
