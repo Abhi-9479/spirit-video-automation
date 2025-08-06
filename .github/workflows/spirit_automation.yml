@@ -42,6 +42,13 @@ jobs:
         curl -L -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
         curl -L -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
 
+    - name: 🐞 Debug Downloaded Files
+      run: |
+        echo "--- Checking downloaded file type ---"
+        file spirit_music/Helium_spirit.mp3
+        echo "--- Displaying first 10 lines of the downloaded file ---"
+        head -n 10 spirit_music/Helium_spirit.mp3    
+
     # Step 3: Set up Python
     - name: 🐍 Set up Python 3.12.10
       uses: actions/setup-python@v4
