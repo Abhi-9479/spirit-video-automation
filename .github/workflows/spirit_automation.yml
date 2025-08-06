@@ -2,7 +2,7 @@ name: Spirit Facts Video Automation
 
 on:
   schedule:
-    # Run every day at 9:00 PM IST (3:30 PM UTC)
+    # Run every day at 12:00 PM IST (6:30 AM UTC)
     - cron: '30 6 * * *'
   
   # Allow manual triggering from GitHub UI
@@ -12,7 +12,10 @@ jobs:
   generate-spirit-video:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
+    permissions:
+      contents: write
+      
     steps:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
@@ -71,16 +74,17 @@ jobs:
       env:
         GITHUB_ACTIONS: true
         PYTHONPATH: ${{ github.workspace }}
-    
+
+    # --- THIS IS THE NEW STEP YOU REQUESTED ---
     - name: 💾 Commit and push last video index
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add spirit_temp/last_video_index.txt
-          # The line below will only commit if there are actual changes
-          git diff-index --quiet HEAD || git commit -m "Update last used video index"
-          git push
-    
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add spirit_temp/last_video_index.txt
+        # The line below will only commit if there are actual changes
+        git diff-index --quiet HEAD || git commit -m "Update last used video index"
+        git push
+        
     - name: 💾 Save generated video as artifact (optional backup)
       if: always()  # Run even if upload fails
       uses: actions/upload-artifact@v4
