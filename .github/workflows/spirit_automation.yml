@@ -21,57 +21,147 @@ jobs:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
     
-    # Step 2: Download all media files from the GitHub Release with authentication
-    - name: 📥 Download Media Assets from Release
+    # Step 2: Download and verify media files from GitHub Release
+    - name: 📥 Download Media Assets from Release with Verification
       run: |
+        set -e  # Exit on any error
+        
         echo "Creating media directories..."
         mkdir -p spirit_temp
         mkdir -p spirit_music
+        
+        # Function to download and verify file
+        download_and_verify() {
+          local url=$1
+          local output=$2
+          local min_size=${3:-1000}  # Minimum file size in bytes
+          
+          echo "Downloading: $output"
+          
+          # Download with retry logic
+          for i in {1..3}; do
+            if curl -L --fail --retry 3 --retry-delay 2 \
+                -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -o "$output" "$url"; then
+              
+              # Check if file exists and has minimum size
+              if [[ -f "$output" && $(stat -f%z "$output" 2>/dev/null || stat -c%s "$output" 2>/dev/null) -gt $min_size ]]; then
+                echo "✅ Successfully downloaded: $output ($(du -h "$output" | cut -f1))"
+                return 0
+              else
+                echo "❌ Download failed or file too small: $output"
+                rm -f "$output"
+              fi
+            else
+              echo "❌ Download attempt $i failed for: $output"
+            fi
+            
+            if [[ $i -lt 3 ]]; then
+              echo "Retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
+          
+          echo "❌ Failed to download after 3 attempts: $output"
+          return 1
+        }
 
         echo "Downloading video templates..."
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_glass.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/Buddha_statue_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/candles_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_temp/trees_spiritual.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4"
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4" "spirit_temp/Buddha_glass.mp4" 1000000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4" "spirit_temp/Buddha_spirit.mp4" 1000000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4" "spirit_temp/Buddha_statue_spirit.mp4" 1000000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4" "spirit_temp/candles_spirit.mp4" 1000000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4" "spirit_temp/trees_spiritual.mp4" 1000000
 
         echo "Downloading music files..."
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Eternal Garden_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Exploring_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Helium_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
-        curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3" "spirit_music/Eternal Garden_spirit.mp3" 100000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3" "spirit_music/Exploring_spirit.mp3" 100000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3" "spirit_music/Helium_spirit.mp3" 100000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3" "spirit_music/Moonlight_spirit.mp3" 100000
+        download_and_verify "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3" "spirit_music/Tiburtina - Schwartzy.mp3" 100000
+        
+        echo "📊 Final verification of all files:"
+        echo "Video files:"
+        find spirit_temp -name "*.mp4" -exec ls -lh {} \;
+        echo "Music files:"
+        find spirit_music -name "*.mp3" -exec ls -lh {} \;
+        
+        # Verify file integrity with ffmpeg
+        echo "🔍 Testing file integrity with ffmpeg:"
+        for file in spirit_music/*.mp3; do
+          if [[ -f "$file" ]]; then
+            echo "Testing: $file"
+            if ffmpeg -v error -i "$file" -f null - -t 1 2>&1; then
+              echo "✅ $file is valid"
+            else
+              echo "❌ $file is corrupted - removing"
+              rm -f "$file"
+            fi
+          fi
+        done
+        
+        for file in spirit_temp/*.mp4; do
+          if [[ -f "$file" ]]; then
+            echo "Testing: $file"
+            if ffmpeg -v error -i "$file" -f null - -t 1 2>&1; then
+              echo "✅ $file is valid"
+            else
+              echo "❌ $file is corrupted - removing"
+              rm -f "$file"
+            fi
+          fi
+        done
 
-    # Step 3: Remove the debugging step as it's no longer needed
-    
-    # Step 4: Set up Python
+    # Step 3: Set up Python
     - name: 🐍 Set up Python 3.12.10
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.10'
     
-    # ... (The rest of your workflow file continues as normal) ...
-    # ... I have removed the debug step and the rest is the same ...
+    # Step 4: Install system dependencies
     - name: 📦 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y imagemagick ffmpeg libjpeg-dev zlib1g-dev
         sudo sed -i 's/rights="none"/rights="read,write"/g' /etc/ImageMagick-6/policy.xml
     
+    # Step 5: Install Python dependencies
     - name: 🔧 Install Python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
     
+    # Step 6: Create credential and environment files
     - name: 🔐 Create credentials files from secrets
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
         echo '${{ secrets.CLIENT_SECRETS }}' > client_secrets.json
         echo '${{ secrets.TOKEN_PICKLE_BASE64 }}' | base64 -d > token.pickle
+    
     - name: 🌍 Create environment file
       run: |
         echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
     
+    # Step 7: Verify media files are ready
+    - name: 📁 Final media verification before script execution
+      run: |
+        echo "📊 Media files verification:"
+        echo "Total music files: $(find spirit_music -name '*.mp3' | wc -l)"
+        echo "Total video files: $(find spirit_temp -name '*.mp4' | wc -l)"
+        
+        if [[ $(find spirit_music -name '*.mp3' | wc -l) -eq 0 ]]; then
+          echo "❌ No valid music files found!"
+          exit 1
+        fi
+        
+        if [[ $(find spirit_temp -name '*.mp4' | wc -l) -eq 0 ]]; then
+          echo "❌ No valid video files found!"
+          exit 1
+        fi
+        
+        echo "✅ All media files verified and ready"
+    
+    # Step 8: Run your main Python script
     - name: 🚀 Generate and upload spirit video
       run: |
         python spirit_git.py
@@ -79,14 +169,18 @@ jobs:
         GITHUB_ACTIONS: true
         PYTHONPATH: ${{ github.workspace }}
 
+    # Step 9: Commit the updated index file back to the repository
     - name: 💾 Commit and push last video index
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add spirit_temp/last_video_index.txt
-        git diff-index --quiet HEAD || git commit -m "Update last used video index"
-        git push
+        if [[ -f "spirit_temp/last_video_index.txt" ]]; then
+          git add spirit_temp/last_video_index.txt
+          git diff-index --quiet HEAD || git commit -m "Update last used video index"
+          git push
+        fi
         
+    # Step 10: Save the final video as a temporary artifact
     - name: 💾 Save generated video as artifact (optional backup)
       if: always()
       uses: actions/upload-artifact@v4
@@ -95,6 +189,7 @@ jobs:
         path: "quote_*.mp4"
         retention-days: 7
     
+    # Step 11: Notify on failure
     - name: 📧 Notify on failure
       if: failure()
       run: |
