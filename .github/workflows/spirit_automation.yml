@@ -17,84 +17,90 @@ jobs:
       contents: write
       
     steps:
+    # Step 1: Checkout the repository code (without LFS)
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
-      with:
-        lfs: true  # Important: This downloads Git LFS files
     
+    # Step 2: Download all media files from the GitHub Release
+    - name: 📥 Download Media Assets from Release
+      run: |
+        echo "Creating media directories..."
+        mkdir -p spirit_temp
+        mkdir -p spirit_music
+
+        echo "Downloading video templates..."
+        curl -L -o "spirit_temp/Buddha_glass.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_glass.mp4"
+        curl -L -o "spirit_temp/Buddha_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_spirit.mp4"
+        curl -L -o "spirit_temp/Buddha_statue_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Buddha_statue_spirit.mp4"
+        curl -L -o "spirit_temp/candles_spirit.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/candles_spirit.mp4"
+        curl -L -o "spirit_temp/trees_spiritual.mp4" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/trees_spiritual.mp4"
+
+        echo "Downloading music files..."
+        curl -L -o "spirit_music/Eternal Garden_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Eternal%20Garden_spirit.mp3"
+        curl -L -o "spirit_music/Exploring_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Exploring_spirit.mp3"
+        curl -L -o "spirit_music/Helium_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Helium_spirit.mp3"
+        curl -L -o "spirit_music/Moonlight_spirit.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Moonlight_spirit.mp3"
+        curl -L -o "spirit_music/Tiburtina - Schwartzy.mp3" "https://github.com/Abhi-9479/spirit-video-automation/releases/download/v1.0-assets/Tiburtina%20-%20Schwartzy.mp3"
+
+    # Step 3: Set up Python
     - name: 🐍 Set up Python 3.12.10
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.10'
     
-    - name: 🔍 Verify Python version
-      run: |
-        python --version
-        python -c "import sys; print(f'Python version: {sys.version}')"
-        pip --version
-    
+    # Step 4: Install system dependencies (no changes here)
     - name: 📦 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y imagemagick ffmpeg libjpeg-dev zlib1g-dev
-        # Configure ImageMagick policy for video processing
         sudo sed -i 's/rights="none"/rights="read,write"/g' /etc/ImageMagick-6/policy.xml
     
+    # Step 5: Install Python dependencies (no changes here)
     - name: 🔧 Install Python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
-        # Verify installations
-        pip list
     
+    # Step 6: Create credential and environment files (no changes here)
     - name: 🔐 Create credentials files from secrets
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
         echo '${{ secrets.CLIENT_SECRETS }}' > client_secrets.json
         echo '${{ secrets.TOKEN_PICKLE_BASE64 }}' | base64 -d > token.pickle
-    
     - name: 🌍 Create environment file
       run: |
         echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" > .env
     
-    - name: 📁 Verify media files
-      run: |
-        echo "📊 Media files verification:"
-        echo "Spirit music files:"
-        ls -la spirit_music/ | head -10
-        echo "Spirit template videos:"  
-        ls -la spirit_temp/ | head -10
-        echo "Total music files: $(find spirit_music -name '*.mp3' | wc -l)"
-        echo "Total video files: $(find spirit_temp -name '*.mp4' | wc -l)"
-    
+    # Step 7: Run your main Python script
     - name: 🚀 Generate and upload spirit video
       run: |
-        python --version
         python spirit_git.py
       env:
         GITHUB_ACTIONS: true
         PYTHONPATH: ${{ github.workspace }}
 
-    # --- THIS IS THE NEW STEP YOU REQUESTED ---
+    # Step 8: Commit the updated index file back to the repository
     - name: 💾 Commit and push last video index
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add spirit_temp/last_video_index.txt
-        # The line below will only commit if there are actual changes
         git diff-index --quiet HEAD || git commit -m "Update last used video index"
         git push
         
+    # Step 9: Save the final video as a temporary artifact
     - name: 💾 Save generated video as artifact (optional backup)
-      if: always()  # Run even if upload fails
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: spirit-video-${{ github.run_number }}
         path: "quote_*.mp4"
         retention-days: 7
     
+    # Step 10: Notify on failure
     - name: 📧 Notify on failure
       if: failure()
       run: |
         echo "❌ Spirit video automation failed!"
         echo "Check the logs above for details."
+
