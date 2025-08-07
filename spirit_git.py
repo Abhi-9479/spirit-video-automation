@@ -251,7 +251,7 @@ def generate_video_with_music(part1: str, part2: str, output_filename: str):
     vertical_pixel_position = int(1920 * vertical_position_percent)
     final_position = ('center', vertical_pixel_position)
     
-    font_path = 'fonts/ARLRDBD.ttf'
+    font_path = 'fonts/ARLRDBD.TTF'
     heading_bg = ColorClip(size=(box_width, box_height), color=(255, 255, 255)).set_position(final_position).set_duration(VIDEO_DURATION)
     heading_clip = TextClip(heading_text, fontsize=75, color='black', font=font_path, size=heading_bg.size).set_position(final_position).set_duration(VIDEO_DURATION)
 
